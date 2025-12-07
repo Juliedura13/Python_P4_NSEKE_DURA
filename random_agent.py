@@ -50,4 +50,3 @@ class WeightedRandomAgent(RandomAgent):
                 weights.append(weights_attribution[i])
         return random.choices(valid_actions, weights=weights)[0]
     
-    
