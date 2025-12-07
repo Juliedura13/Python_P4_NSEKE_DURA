@@ -3,29 +3,39 @@ import random
 
 
 class SmartAgent:
-    def __init__(self, env, player_name=None):
+    def __init__(self, env, player_name=None, player_id="player_0"):
         """Initialize the agent with a PettingZoo Connect Four environment."""
         self.env = env
         self.action_space = env.action_space("player_0")
         self.player_name = player_name or "SmartAgent"
+
+        # nouveau : mémoriser si on est player_0 ou player_1
+        self.player_id = player_id
+        if self.player_id == "player_0":
+            self.my_channel = 0
+            self.opp_channel = 1
+        else:
+            self.my_channel = 1
+            self.opp_channel = 0
 
     def choose_action(self, observation, reward=0.0, terminated=False,
                       truncated=False, info=None, action_mask=None):
         """Select an action according to heuristic rules."""
         if terminated or truncated:
             return None
+
         valid_actions = self._get_valid_actions(action_mask)
 
         # Rule 1: Win immediately
         winning_move = self._find_winning_move(observation, valid_actions,
-                                               channel=0)
+                                               channel=self.my_channel)
         if winning_move is not None:
             #logger.success(f"{self.player_name}: WINNING MOVE -> column {winning_move}")
             return winning_move
 
         # Rule 2: Block the opponent's winning move
         blocking_move = self._find_winning_move(observation, valid_actions,
-                                                channel=1)
+                                                channel=self.opp_channel)
         if blocking_move is not None:
             #logger.warning(f"{self.player_name}: BLOCKING -> column {blocking_move}")
             return blocking_move
@@ -52,7 +62,7 @@ class SmartAgent:
         if action_mask is None:
             return list(range(self.action_space.n))
 
-        return [i for i, v in enumerate(action_mask) if v == 1]      
+        return [i for i, v in enumerate(action_mask) if v == 1]
     def _find_winning_move(self, observation, valid_actions, channel):
         board = observation.copy()
 
@@ -88,9 +98,9 @@ class SmartAgent:
                 r -= d_row
                 c -= d_col
                 temp += 1
-       
+
             if temp >= 4:
                 return True
-        
+
         return False
     
