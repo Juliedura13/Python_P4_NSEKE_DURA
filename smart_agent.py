@@ -9,14 +9,9 @@ class SmartAgent:
         self.action_space = env.action_space("player_0")
         self.player_name = player_name or "SmartAgent"
 
-        # nouveau : mémoriser si on est player_0 ou player_1
         self.player_id = player_id
-        if self.player_id == "player_0":
-            self.my_channel = 0
-            self.opp_channel = 1
-        else:
-            self.my_channel = 1
-            self.opp_channel = 0
+        self.my_channel = 0
+        self.opp_channel = 1
 
     def choose_action(self, observation, reward=0.0, terminated=False,
                       truncated=False, info=None, action_mask=None):
@@ -61,16 +56,19 @@ class SmartAgent:
         """Return the list of indices corresponding to playable columns."""
         if action_mask is None:
             return list(range(self.action_space.n))
+        return [i for i, value in enumerate(action_mask) if value == 1]
 
-        return [i for i, v in enumerate(action_mask) if v == 1]
-    def _find_winning_move(self, observation, valid_actions, channel):
-        board = observation.copy()
-
+    def _find_winning_move(self, board, valid_actions, channel):
+        """Return a column that gives an immediate win for the given
+        channel, or None if no such move exists."""
         for col in valid_actions:
             row = self._get_next_row(board, col)
-            if row is None: #full column
+            if row is None:
                 continue
+
             board_simulation = board.copy()
+            board_simulation[row, col, self.my_channel] = 0
+            board_simulation[row, col, self.opp_channel] = 0
             board_simulation[row, col, channel] = 1
 
             if self._check_win_from_position(board_simulation, row=row,
@@ -80,26 +78,31 @@ class SmartAgent:
 
     def _get_next_row(self, board, col):
         for row in range(5, -1, -1):
-            if board[row, col, 0] == 0 and board[row, col, 1] == 0:
+            if board[row, col, self.my_channel] == 0 and board[row, col, self.opp_channel] == 0:
                 return row
         return None
 
     def _check_win_from_position(self, board, row, col, channel):
-        directions = [(0,1), (1,0), (-1,1), (1,1)]
+        directions = [(0, 1), (1, 0), (-1, 1), (1, 1)]
+
         for d_row, d_col in directions:
-            temp = 1
+            count = 1
+
+            # Direction "avant"
             r, c = row + d_row, col + d_col
-            while 0 <= r < 6 and 0 <= c < 7 and board[r,c, channel] == 1:
+            while 0 <= r < 6 and 0 <= c < 7 and board[r, c, channel] == 1:
+                count += 1
                 r += d_row
                 c += d_col
-                temp += 1
+
+            # Direction "arrière"
             r, c = row - d_row, col - d_col
-            while 0 <= r < 6 and 0 <= c < 7 and board[r,c, channel] == 1:
+            while 0 <= r < 6 and 0 <= c < 7 and board[r, c, channel] == 1:
+                count += 1
                 r -= d_row
                 c -= d_col
-                temp += 1
 
-            if temp >= 4:
+            if count >= 4:
                 return True
 
         return False

@@ -1,7 +1,10 @@
-"""Tournament script to compare SmartAgent with Random and WeightedRandom agents."""
+"""Tournament script to compare SmartAgent with Minimax, Random and WeightedRandom agents."""
 from pettingzoo.classic import connect_four_v3
+
 from random_agent import RandomAgent, WeightedRandomAgent
 from smart_agent import SmartAgent
+from minimax_agent import MinimaxAgent
+
 
 # pylint: disable=too-many-locals
 def play_one_game(agent0_class, agent1_class, seed = 42):
@@ -9,8 +12,15 @@ def play_one_game(agent0_class, agent1_class, seed = 42):
     env = connect_four_v3.env(render_mode=None)
     env.reset(seed=seed)
 
-    agent0 = agent0_class(env)
-    agent1 = agent1_class(env)
+    if agent0_class in [SmartAgent, MinimaxAgent]:
+        agent0 = agent0_class(env, player_id="player_0")
+    else:
+        agent0 = agent0_class(env)
+
+    if agent1_class in [SmartAgent, MinimaxAgent]:
+        agent1 = agent1_class(env, player_id="player_1")
+    else:
+        agent1 = agent1_class(env)
     winner = None
     rewards = {"player_0": 0, "player_1": 0}
     move_count = 0
@@ -27,13 +37,20 @@ def play_one_game(agent0_class, agent1_class, seed = 42):
         mask = obs["action_mask"]
         board = obs["observation"]
 
-        if agent_name == "player_0" and isinstance(agent0, SmartAgent):
-            action = agent0.choose_action(board, action_mask=mask)
-        else:
+        if agent_name == "player_0":
+            if isinstance(agent0, RandomAgent):
+                action = agent0.choose_action_manual(obs, action_mask=mask)
+            elif isinstance(agent0, WeightedRandomAgent):
+                action = agent0.choose_action(obs, action_mask=mask)
+            else:  # SmartAgent, MinimaxAgent, etc.
+                action = agent0.choose_action(board, action_mask=mask)
+        else:  # player_1
             if isinstance(agent1, RandomAgent):
                 action = agent1.choose_action_manual(obs, action_mask=mask)
             elif isinstance(agent1, WeightedRandomAgent):
                 action = agent1.choose_action(obs, action_mask=mask)
+            else:
+                action = agent1.choose_action(board, action_mask=mask)
 
         move_count += 1
         env.step(action)
@@ -75,7 +92,19 @@ def stat_games(num_games, agent0_class, agent1_class):
 
 if __name__ == "__main__":
     print("_____SmartAgent (player_0) vs RandomAgent (player_1)_____")
-    stat_games(100, SmartAgent, RandomAgent) #voir 500 c'est intéressant
+    stat_games(100, SmartAgent, RandomAgent)
+
+    print("_____RandomAgent (player_0) vs SmartAgent (player_1)_____")
+    stat_games(100, RandomAgent, SmartAgent)
 
     print("_____SmartAgent (player_0) vs WeightedRandomAgent (player_1)_____")
-    stat_games(100, SmartAgent, WeightedRandomAgent) #voir 500 c'est intéressant
+    stat_games(100, SmartAgent, WeightedRandomAgent)
+
+    print("_____WeightedRandomAgent (player_0) vs SmartAgent (player_1)_____")
+    stat_games(100, WeightedRandomAgent, SmartAgent)
+    
+    print("_____Minimax (player_0) vs SmartAgent (player_1)_____")
+    stat_games(100, MinimaxAgent, SmartAgent)
+
+    print("_____SmartAgent (player_0) vs Minimax (player_1)_____")
+    stat_games(100, SmartAgent, MinimaxAgent)
