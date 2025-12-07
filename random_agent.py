@@ -5,10 +5,11 @@ import random
 # pylint: disable=too-few-public-methods
 class RandomAgent:
     """An agent that plays random valid moves."""
-    def __init__(self, env, player_name=None):
+    def __init__(self, env, player_name=None, player_id="player_0"):
         """Store environment and the optional player name."""
         self.env = env
         self.player_name = player_name
+        self.player_id = player_id 
         pass
 
     def choose_action_manual(self, observation,terminated=False,
@@ -48,4 +49,5 @@ class WeightedRandomAgent(RandomAgent):
                 valid_actions.append(i)
                 weights.append(weights_attribution[i])
         return random.choices(valid_actions, weights=weights)[0]
+    
     
